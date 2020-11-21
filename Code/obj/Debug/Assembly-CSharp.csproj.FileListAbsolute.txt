@@ -1,0 +1,2 @@
+C:\Repositories\VersionTest2\ThirdPersonBase_Import\obj\Debug\Assembly-CSharp.csprojAssemblyReference.cache
+C:\Repositories\VersionTest2\ThirdPersonBase_Import\obj\Debug\Assembly-CSharp.csproj.CoreCompileInputs.cache
