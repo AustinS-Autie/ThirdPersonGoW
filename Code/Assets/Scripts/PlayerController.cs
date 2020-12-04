@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
@@ -36,6 +37,18 @@ public class PlayerController : MonoBehaviour
     bool axeCol;
     float direction;
 
+    [SerializeField]
+    GameObject[] portals;
+
+    [SerializeField]
+    float healthMax;
+
+    [SerializeField]
+    Image healthBar;
+
+    float playerHealth = 100;
+
+
 
     // Start is called before the first frame update
     void Start()
@@ -50,25 +63,21 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+
+        healthBar.fillAmount = playerHealth / healthMax;
+
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
+
+        direction += (h * moveSpeed / 2);
+
+        if (v != 0)
+            rb.velocity = (v * transform.forward * moveSpeed);
+
+        transform.rotation = Quaternion.Euler(mainCamera.rotation.x,direction,mainCamera.rotation.z);
+        rb.rotation = transform.rotation;
+
         
-        direction = 0;
-        
-        int mirror = 1;
-
-        if (v < 0)
-        {
-            mirror = -1;
-            direction += 180;
-        }
-
-        direction += h * 90 * mirror;
-
-
-
-        transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z + (v * moveSpeed * Time.deltaTime));
-
         var camForward = mainCamera.forward;
         var camRight = mainCamera.right;
 
@@ -78,21 +87,19 @@ public class PlayerController : MonoBehaviour
         camRight.Normalize();
 
         var moveDirection = (camForward * v * moveSpeed) + (camRight * h * moveSpeed);
-
+        anim.SetFloat("moveSpeed", Mathf.Abs(moveDirection.magnitude));
 
         //transform.LookAt(transform.position + camForward);
+        
 
-        rb.velocity = new Vector3(moveDirection.x, rb.velocity.y, moveDirection.z);
-        anim.SetFloat("moveSpeed", Mathf.Abs(moveDirection.magnitude));
-        transform.rotation = Quaternion.Euler(mainCamera.rotation.x,direction,mainCamera.rotation.z);
-        rb.rotation = transform.rotation;
-
+        
         if (startedCombo==false)
             ThrowAxe();
 
         if (axeThrow==0)
             SwordComboFunction();
-            
+
+
 
 
     }
@@ -109,7 +116,7 @@ public class PlayerController : MonoBehaviour
 
 
 
-        if (axeThrow == 0)
+        if (axeThrow == 0) //before throw
         {
             axeObj.transform.localRotation = Quaternion.Euler(
                 initialAxeRot.x + 70,
@@ -118,7 +125,7 @@ public class PlayerController : MonoBehaviour
         }
 
 
-        if (Input.GetMouseButtonDown(0) && axeThrow == 0)
+        if ((Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1) ) && axeThrow == 0)
         {
             Debug.Log("Axe 0");
             anim.SetTrigger("axeThrow");
@@ -127,7 +134,14 @@ public class PlayerController : MonoBehaviour
             startedCombo2 = true;
             axeInHand = false;
 
-            
+            if (Input.GetMouseButtonDown(0))
+                axeObj.GetComponent<SwordPhysics>().SetPortalSpawn(portals[0]);
+            else
+                axeObj.GetComponent<SwordPhysics>().SetPortalSpawn(portals[1]);
+
+
+
+
             initialAxePos = new Vector3(axeObj.transform.position.x,
                 axeObj.transform.position.y, axeObj.transform.position.z);
 
@@ -137,24 +151,15 @@ public class PlayerController : MonoBehaviour
 
         }
 
-        if (axeThrow == 2)
+        if (axeThrow == 2) //while axe is out of the hand
         {
-            if (!axeCol)
+            if (!axeCol)    //collision check
             {
-                if (direction == 0)
-                {
-                    axeObj.transform.position = Vector3.Lerp(
-                    axeObj.transform.position,
-                    axeObj.transform.position + new Vector3(
-                    0, 0.5f, 40), 0.0075f);
-                }
-                else
-                {
-                    axeObj.transform.position = Vector3.Lerp(
-                    axeObj.transform.position,
-                    axeObj.transform.position + new Vector3(
-                    Input.GetAxis("Horizontal") * 40, 0.5f, Input.GetAxis("Vertical") * 40), 0.0075f);
-                }
+            
+                axeObj.transform.position = Vector3.Lerp(
+                axeObj.transform.position,
+                axeObj.transform.position + (transform.forward*30), 0.0075f);
+
                 
                 TurnOnSwordCollider();
             }
@@ -165,25 +170,21 @@ public class PlayerController : MonoBehaviour
 
             //Debug.Log("AxeAttack");
 
-        }
-
-        if (axeThrow == 2 && (Input.GetMouseButtonUp(0) || animTiming <= 0))
-        {
-            if (animTiming <= 0)
-                anim.SetTrigger("axeReturn");
-            axeThrow = 3;
-            //move axe back
-            Debug.Log("Axe 3");
-        }
+            if (Input.GetMouseButtonUp(0) || Input.GetMouseButtonUp(1) || animTiming <= 0) //Returns the axe early
+            {
+                if (animTiming <= 0)
+                    anim.SetTrigger("axeReturn");
+                axeThrow = 3;
+                //move axe back
+                Debug.Log("Axe 3");
+            }
 
 
 
-        if (axeThrow == 2)
-        {
-
+            //Axe rotating
             axeObj.transform.rotation = Quaternion.Euler(
                 (axeMoveTo.rotation.x * -1) + 90,
-                (axeMoveTo.rotation.y * -1) + rotVal, 
+                (axeMoveTo.rotation.y * -1) + rotVal,
                 axeMoveTo.rotation.z * -1);
 
 
@@ -194,8 +195,8 @@ public class PlayerController : MonoBehaviour
         }
 
         if(axeThrow==3 && Vector3.Distance(axeObj.transform.position, axeMoveTo.position) > 1f)
-            {
-                axeThrow = 4;
+        {
+            axeThrow = 4;
             Debug.Log("Axe 4");
         }
 
@@ -406,4 +407,13 @@ public class PlayerController : MonoBehaviour
         return axeCol;
     }
 
+    public void OnCollisionEnter(Collision col)
+    {
+        if (col.gameObject.GetComponent<EnemyBullet>() != null)
+        {
+            playerHealth -= 5;
+            Destroy(col.gameObject);
+        }
+
+    }
 }

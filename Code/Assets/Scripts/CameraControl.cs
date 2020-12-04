@@ -37,9 +37,9 @@ public class CameraControl : MonoBehaviour
 
         transform.position = new Vector3(playerTransform.position.x, playerTransform.position.y+2, playerTransform.position.z-4);
 
-        //transform.RotateAround(currentPlayer.transform.position, transform.up, x*rotSpeed);
-        //transform.Rotate(new Vector3(0, x * rotSpeed, 0));
-        //tiltUpDown.Rotate(new Vector3(y * rotSpeed, 0, 0));
+        transform.RotateAround(currentPlayer.transform.position, transform.up, x*rotSpeed);
+        transform.Rotate(new Vector3(0, x * rotSpeed, 0));
+        tiltUpDown.Rotate(new Vector3(y * rotSpeed, 0, 0));
 
     }
 }
